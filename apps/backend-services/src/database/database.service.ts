@@ -386,6 +386,7 @@ export class DatabaseService {
     name: string;
     description?: string;
     created_by: string;
+    suggestion_mapping?: JsonValue | null;
   }): Promise<LabelingProjectData> {
     this.logger.debug(`Creating labeling project: ${data.name}`);
     const project = await this.prisma.labelingProject.create({
@@ -393,6 +394,7 @@ export class DatabaseService {
         name: data.name,
         description: data.description,
         created_by: data.created_by,
+        suggestion_mapping: data.suggestion_mapping,
         status: ProjectStatus.active,
       },
       include: {
@@ -436,7 +438,12 @@ export class DatabaseService {
 
   async updateLabelingProject(
     id: string,
-    data: { name?: string; description?: string; status?: ProjectStatus },
+    data: {
+      name?: string;
+      description?: string;
+      status?: ProjectStatus;
+      suggestion_mapping?: JsonValue | null;
+    },
   ): Promise<LabelingProjectData | null> {
     this.logger.debug(`Updating labeling project: ${id}`);
     try {
