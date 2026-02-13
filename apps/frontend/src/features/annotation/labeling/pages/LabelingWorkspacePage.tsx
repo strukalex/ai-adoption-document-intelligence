@@ -26,6 +26,7 @@ import {
 import { AnnotationCanvas } from "../../core/canvas/AnnotationCanvas";
 import { useCanvasZoom } from "../../core/canvas/hooks/useCanvasZoom";
 import { ViewerToolbar } from "../../core/document-viewer/ViewerToolbar";
+import { FieldFilterInput } from "../../core/field-panel/FieldFilterInput";
 import { FieldPanel } from "../../core/field-panel/FieldPanel";
 import { useFieldSchema } from "../hooks/useFieldSchema";
 import { type LabelDto, useLabels } from "../hooks/useLabels";
@@ -116,6 +117,7 @@ export const LabelingWorkspacePage: FC<LabelingWorkspacePageProps> = ({
   );
   const { getAccessToken } = useAuth();
   const [activeFieldKey, setActiveFieldKey] = useState<string | null>(null);
+  const [fieldFilter, setFieldFilter] = useState("");
   const [labelState, setLabelState] = useState<Record<string, LabelState>>({});
   const [wordAssignments, setWordAssignments] = useState<
     Record<string, string>
@@ -298,6 +300,26 @@ export const LabelingWorkspacePage: FC<LabelingWorkspacePageProps> = ({
     });
     return values;
   }, [labelState]);
+
+  const filteredSchema = useMemo(() => {
+    const query = fieldFilter.trim().toLowerCase();
+    if (!query) {
+      return schema;
+    }
+    return schema.filter((field) => field.fieldKey.toLowerCase().includes(query));
+  }, [schema, fieldFilter]);
+
+  useEffect(() => {
+    if (!activeFieldKey) {
+      return;
+    }
+    const isVisible = filteredSchema.some(
+      (field) => field.fieldKey === activeFieldKey,
+    );
+    if (!isVisible) {
+      setActiveFieldKey(null);
+    }
+  }, [activeFieldKey, filteredSchema]);
 
   const ocrWords = useMemo<OcrElement[]>(() => {
     const azureOcr = projectDocument?.labeling_document?.ocr_result as
@@ -1067,21 +1089,28 @@ export const LabelingWorkspacePage: FC<LabelingWorkspacePageProps> = ({
             }
           }}
         >
-          <Text
-            size="sm"
-            fw={600}
-            mb="md"
-            onClick={(e) => {
-              // Deselect when clicking on the header text
-              console.debug(
-                "[Labeling] Field panel header clicked - deselecting",
-              );
-              setActiveFieldKey(null);
-              e.stopPropagation();
-            }}
-          >
-            Fields
-          </Text>
+          <Stack gap="xs" mb="md">
+            <Text
+              size="sm"
+              fw={600}
+              onClick={(e) => {
+                // Deselect when clicking on the header text
+                console.debug(
+                  "[Labeling] Field panel header clicked - deselecting",
+                );
+                setActiveFieldKey(null);
+                e.stopPropagation();
+              }}
+            >
+              Fields
+            </Text>
+            <FieldFilterInput
+              value={fieldFilter}
+              onChange={setFieldFilter}
+              totalCount={schema.length}
+              filteredCount={filteredSchema.length}
+            />
+          </Stack>
 
           <ScrollArea
             type="auto"
@@ -1105,17 +1134,28 @@ export const LabelingWorkspacePage: FC<LabelingWorkspacePageProps> = ({
               },
             }}
           >
-            <FieldPanel
-              fields={schema}
-              values={labelValues}
-              activeFieldKey={activeFieldKey}
-              onSelectField={(fieldKey) => {
-                console.debug("[Labeling] Field selected", { fieldKey });
-                setActiveFieldKey(fieldKey);
-              }}
-              onValueChange={handleValueChange}
-              readOnly={true}
-            />
+            {filteredSchema.length === 0 && schema.length > 0 ? (
+              <Stack gap="xs">
+                <Text fw={600} size="sm">
+                  No matching fields
+                </Text>
+                <Text size="sm" c="dimmed">
+                  Try a different search term.
+                </Text>
+              </Stack>
+            ) : (
+              <FieldPanel
+                fields={filteredSchema}
+                values={labelValues}
+                activeFieldKey={activeFieldKey}
+                onSelectField={(fieldKey) => {
+                  console.debug("[Labeling] Field selected", { fieldKey });
+                  setActiveFieldKey(fieldKey);
+                }}
+                onValueChange={handleValueChange}
+                readOnly={true}
+              />
+            )}
           </ScrollArea>
         </Paper>
       </Group>

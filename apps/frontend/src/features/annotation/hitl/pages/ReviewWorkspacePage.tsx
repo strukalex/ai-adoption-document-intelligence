@@ -17,6 +17,7 @@ import { useAuth } from "@/auth/AuthContext";
 import { colorForFieldKeyWithBorder } from "@/shared/utils";
 import { AnnotationCanvas } from "../../core/canvas/AnnotationCanvas";
 import { DocumentViewer } from "../../core/document-viewer/DocumentViewer";
+import { FieldFilterInput } from "../../core/field-panel/FieldFilterInput";
 import { CorrectionAction } from "../../core/types/annotation";
 import type { BoundingBox } from "../../core/types/canvas";
 import { CanvasTool } from "../../core/types/canvas";
@@ -89,6 +90,7 @@ export const ReviewWorkspacePage: FC<ReviewWorkspacePageProps> = ({
   const [escalationOpen, setEscalationOpen] = useState(false);
   const [escalationReason, setEscalationReason] = useState("");
   const [activeFieldKey, setActiveFieldKey] = useState<string | null>(null);
+  const [fieldFilter, setFieldFilter] = useState("");
   const isPdf = session?.document?.storage_path?.endsWith(".pdf");
 
   useEffect(() => {
@@ -162,6 +164,28 @@ export const ReviewWorkspacePage: FC<ReviewWorkspacePageProps> = ({
     () => [...fields].sort((a, b) => (a.confidence ?? 1) - (b.confidence ?? 1)),
     [fields],
   );
+
+  const filteredSortedFields = useMemo(() => {
+    const query = fieldFilter.trim().toLowerCase();
+    if (!query) {
+      return sortedFields;
+    }
+    return sortedFields.filter((field) =>
+      field.fieldKey.toLowerCase().includes(query),
+    );
+  }, [sortedFields, fieldFilter]);
+
+  useEffect(() => {
+    if (!activeFieldKey) {
+      return;
+    }
+    const isVisible = filteredSortedFields.some(
+      (field) => field.fieldKey === activeFieldKey,
+    );
+    if (!isVisible) {
+      setActiveFieldKey(null);
+    }
+  }, [activeFieldKey, filteredSortedFields]);
 
   const boxes = useMemo(() => {
     const result = sortedFields
@@ -356,15 +380,22 @@ export const ReviewWorkspacePage: FC<ReviewWorkspacePageProps> = ({
             }
           }}
         >
-          <Text
-            size="sm"
-            fw={600}
-            mb="sm"
-            onClick={() => setActiveFieldKey(null)}
-            style={{ cursor: "pointer" }}
-          >
-            Fields
-          </Text>
+          <Stack gap="xs" mb="sm">
+            <Text
+              size="sm"
+              fw={600}
+              onClick={() => setActiveFieldKey(null)}
+              style={{ cursor: "pointer" }}
+            >
+              Fields
+            </Text>
+            <FieldFilterInput
+              value={fieldFilter}
+              onChange={setFieldFilter}
+              totalCount={sortedFields.length}
+              filteredCount={filteredSortedFields.length}
+            />
+          </Stack>
 
           <ScrollArea
             type="auto"
@@ -385,62 +416,73 @@ export const ReviewWorkspacePage: FC<ReviewWorkspacePageProps> = ({
             }}
           >
             <Stack gap="md">
-              {sortedFields.map((field) => {
-                const correction = correctionMap[field.fieldKey];
-                const isCorrected =
-                  correction?.action === CorrectionAction.CORRECTED;
-                const isActive = field.fieldKey === activeFieldKey;
+              {filteredSortedFields.length === 0 && sortedFields.length > 0 ? (
+                <Stack gap="xs">
+                  <Text fw={600} size="sm">
+                    No matching fields
+                  </Text>
+                  <Text size="sm" c="dimmed">
+                    Try a different search term.
+                  </Text>
+                </Stack>
+              ) : (
+                filteredSortedFields.map((field) => {
+                  const correction = correctionMap[field.fieldKey];
+                  const isCorrected =
+                    correction?.action === CorrectionAction.CORRECTED;
+                  const isActive = field.fieldKey === activeFieldKey;
 
-                // Generate deterministic color based on field key
-                const { borderCss } = colorForFieldKeyWithBorder(
-                  field.fieldKey,
-                );
+                  // Generate deterministic color based on field key
+                  const { borderCss } = colorForFieldKeyWithBorder(
+                    field.fieldKey,
+                  );
 
-                return (
-                  <Paper
-                    key={field.fieldKey}
-                    withBorder
-                    p="sm"
-                    style={{
-                      borderColor: isActive ? "#ff0000" : borderCss,
-                      borderStyle: isActive ? "dashed" : "solid",
-                      borderWidth: isActive
-                        ? "3px"
-                        : isCorrected
-                          ? "2px"
-                          : "2px",
-                      cursor: "pointer",
-                    }}
-                    onClick={() => setActiveFieldKey(field.fieldKey)}
-                  >
-                    <Stack gap="xs">
-                      <Group justify="space-between">
-                        <Group gap="xs">
-                          <Text fw={600} size="sm">
-                            {field.fieldKey}
-                          </Text>
-                          {isCorrected && (
-                            <Text size="xs" c="yellow" fw={500}>
-                              ✎ Edited
+                  return (
+                    <Paper
+                      key={field.fieldKey}
+                      withBorder
+                      p="sm"
+                      style={{
+                        borderColor: isActive ? "#ff0000" : borderCss,
+                        borderStyle: isActive ? "dashed" : "solid",
+                        borderWidth: isActive
+                          ? "3px"
+                          : isCorrected
+                            ? "2px"
+                            : "2px",
+                        cursor: "pointer",
+                      }}
+                      onClick={() => setActiveFieldKey(field.fieldKey)}
+                    >
+                      <Stack gap="xs">
+                        <Group justify="space-between">
+                          <Group gap="xs">
+                            <Text fw={600} size="sm">
+                              {field.fieldKey}
                             </Text>
-                          )}
+                            {isCorrected && (
+                              <Text size="xs" c="yellow" fw={500}>
+                                ✎ Edited
+                              </Text>
+                            )}
+                          </Group>
+                          <ConfidenceIndicator confidence={field.confidence} />
                         </Group>
-                        <ConfidenceIndicator confidence={field.confidence} />
-                      </Group>
-                      <TextInput
-                        value={
-                          correctionMap[field.fieldKey]?.corrected_value ??
-                          field.value
-                        }
-                        onChange={(event) =>
-                          handleFieldChange(field, event.currentTarget.value)
-                        }
-                        disabled={readOnly}
-                      />
-                    </Stack>
-                  </Paper>
-                );
-              })}
+                        <TextInput
+                          value={
+                            correctionMap[field.fieldKey]?.corrected_value ??
+                            field.value
+                          }
+                          onChange={(event) =>
+                            handleFieldChange(field, event.currentTarget.value)
+                          }
+                          disabled={readOnly}
+                        />
+                      </Stack>
+                    </Paper>
+                  );
+                })
+              )}
             </Stack>
           </ScrollArea>
         </Paper>
