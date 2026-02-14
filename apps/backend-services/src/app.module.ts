@@ -3,6 +3,7 @@ import { ConfigModule } from "@nestjs/config";
 import { ScheduleModule } from "@nestjs/schedule";
 import { ApiKeyModule } from "./api-key/api-key.module";
 import { AuthModule } from "./auth/auth.module";
+import { BenchmarkModule } from "./benchmark/benchmark.module";
 import { BlobStorageModule } from "./blob-storage/blob-storage.module";
 import { DatabaseModule } from "./database/database.module";
 import { DocumentModule } from "./document/document.module";
@@ -25,6 +26,7 @@ import { WorkflowModule } from "./workflow/workflow.module";
     ScheduleModule.forRoot(),
     AuthModule,
     ApiKeyModule,
+    BenchmarkModule,
     DatabaseModule,
     DocumentModule,
     QueueModule,
