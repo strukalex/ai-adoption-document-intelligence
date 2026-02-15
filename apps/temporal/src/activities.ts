@@ -29,3 +29,10 @@ export { getWorkflowGraphConfig } from './activities/get-workflow-graph-config';
 export { splitDocument } from './activities/split-document';
 export { classifyDocument } from './activities/classify-document';
 export { validateDocumentFields } from './activities/document-validate-fields';
+
+// Benchmark activities
+export { benchmarkEvaluate, benchmarkAggregate } from './activities/benchmark-evaluate';
+export type {
+  BenchmarkEvaluateInput,
+  BenchmarkAggregateInput,
+} from './activities/benchmark-evaluate';
