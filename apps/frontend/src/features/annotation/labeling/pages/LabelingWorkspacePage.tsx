@@ -306,7 +306,9 @@ export const LabelingWorkspacePage: FC<LabelingWorkspacePageProps> = ({
     if (!query) {
       return schema;
     }
-    return schema.filter((field) => field.fieldKey.toLowerCase().includes(query));
+    return schema.filter((field) =>
+      field.fieldKey.toLowerCase().includes(query),
+    );
   }, [schema, fieldFilter]);
 
   useEffect(() => {
@@ -440,7 +442,7 @@ export const LabelingWorkspacePage: FC<LabelingWorkspacePageProps> = ({
   ) => {
     console.debug("[Labeling] Applying suggestions", {
       suggestionCount: suggestions.length,
-      suggestions: suggestions.map(s => ({
+      suggestions: suggestions.map((s) => ({
         field_key: s.field_key,
         element_count: s.element_ids.length,
       })),
@@ -450,7 +452,9 @@ export const LabelingWorkspacePage: FC<LabelingWorkspacePageProps> = ({
     const nextAssignments: Record<string, string> = {};
 
     for (const suggestion of suggestions) {
-      console.debug(`[Labeling] Processing suggestion for field "${suggestion.field_key}" with ${suggestion.element_ids.length} elements`);
+      console.debug(
+        `[Labeling] Processing suggestion for field "${suggestion.field_key}" with ${suggestion.element_ids.length} elements`,
+      );
       let assignedCount = 0;
       let skippedCount = 0;
 
@@ -460,7 +464,9 @@ export const LabelingWorkspacePage: FC<LabelingWorkspacePageProps> = ({
           continue;
         }
         if (nextAssignments[elementId]) {
-          console.debug(`[Labeling] Element ${elementId} already assigned to ${nextAssignments[elementId]}, skipping for ${suggestion.field_key}`);
+          console.debug(
+            `[Labeling] Element ${elementId} already assigned to ${nextAssignments[elementId]}, skipping for ${suggestion.field_key}`,
+          );
           skippedCount++;
           continue;
         }
@@ -468,7 +474,9 @@ export const LabelingWorkspacePage: FC<LabelingWorkspacePageProps> = ({
         assignedCount++;
       }
 
-      console.debug(`[Labeling] Assigned ${assignedCount} elements to "${suggestion.field_key}" (skipped ${skippedCount})`);
+      console.debug(
+        `[Labeling] Assigned ${assignedCount} elements to "${suggestion.field_key}" (skipped ${skippedCount})`,
+      );
     }
 
     console.debug("[Labeling] Final assignments", {
@@ -485,7 +493,7 @@ export const LabelingWorkspacePage: FC<LabelingWorkspacePageProps> = ({
       const suggestions = await loadSuggestionsAsync();
       console.debug("[Labeling] Received suggestions from backend", {
         count: suggestions.length,
-        fields: suggestions.map(s => `${s.field_key}="${s.value}"`),
+        fields: suggestions.map((s) => `${s.field_key}="${s.value}"`),
       });
       applySuggestionsToAssignments(suggestions);
       notifications.show({
@@ -519,12 +527,12 @@ export const LabelingWorkspacePage: FC<LabelingWorkspacePageProps> = ({
 
   useEffect(() => {
     if (
-      autoSuggestionApplied
-      || isLoadingSuggestions
-      || isLabelsLoading
-      || labels.length > 0
-      || Object.keys(wordAssignments).length > 0
-      || ocrWords.length === 0
+      autoSuggestionApplied ||
+      isLoadingSuggestions ||
+      isLabelsLoading ||
+      labels.length > 0 ||
+      Object.keys(wordAssignments).length > 0 ||
+      ocrWords.length === 0
     ) {
       return;
     }
