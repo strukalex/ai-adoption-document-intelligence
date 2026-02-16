@@ -13,6 +13,7 @@ import {
 import { useElementSize } from "@mantine/hooks";
 import { IconArrowLeft } from "@tabler/icons-react";
 import { FC, useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/auth/AuthContext";
 import { colorForFieldKeyWithBorder } from "@/shared/utils";
 import { AnnotationCanvas } from "../../core/canvas/AnnotationCanvas";
@@ -25,12 +26,6 @@ import { ConfidenceIndicator } from "../components/ConfidenceIndicator";
 import { CorrectionHistory } from "../components/CorrectionHistory";
 import { ReviewToolbar } from "../components/ReviewToolbar";
 import { useReviewSession } from "../hooks/useReviewSession";
-
-interface ReviewWorkspacePageProps {
-  sessionId: string;
-  onBack: () => void;
-  readOnly?: boolean;
-}
 
 interface OcrField {
   valueString?: string;
@@ -51,11 +46,22 @@ interface ReviewField {
   boundingBox?: BoundingBox;
 }
 
-export const ReviewWorkspacePage: FC<ReviewWorkspacePageProps> = ({
-  sessionId,
-  onBack,
-  readOnly = false,
-}) => {
+export const ReviewWorkspacePage: FC = () => {
+  const navigate = useNavigate();
+  const { sessionId } = useParams<{ sessionId: string }>();
+  const [searchParams] = useSearchParams();
+  const readOnly = searchParams.get("readOnly") === "true";
+
+  if (!sessionId) {
+    return (
+      <Stack align="center" justify="center" mih="70vh">
+        <Text size="sm" c="dimmed">
+          Invalid session ID.
+        </Text>
+      </Stack>
+    );
+  }
+
   const {
     session,
     corrections,
@@ -228,7 +234,7 @@ export const ReviewWorkspacePage: FC<ReviewWorkspacePageProps> = ({
       await submitCorrectionsAsync(payload);
     }
     await approveSessionAsync();
-    onBack();
+    navigate("/review");
   };
 
   const handleEscalate = async () => {
@@ -266,7 +272,7 @@ export const ReviewWorkspacePage: FC<ReviewWorkspacePageProps> = ({
           <Button
             variant="subtle"
             leftSection={<IconArrowLeft size={16} />}
-            onClick={onBack}
+            onClick={() => navigate("/review")}
           >
             Back
           </Button>
